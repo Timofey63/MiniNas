@@ -16,8 +16,8 @@ builder.Services.Configure<FormOptions>(options =>
 
 var app = builder.Build();
 
-// var storagePath = @"/home/td63d/storage";
-var storagePath = @"D:\StorageNas";
+var storagePath = @"/home/td63d/storage";
+//var storagePath = @"D:\StorageNas";
 
 if (!Directory.Exists(storagePath))
     Directory.CreateDirectory(storagePath);
