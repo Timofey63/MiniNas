@@ -16,7 +16,8 @@ builder.Services.Configure<FormOptions>(options =>
 
 var app = builder.Build();
 
-var storagePath = @"/home/td63d/storage";
+// var storagePath = @"/home/td63d/storage";
+var storagePath = @"D:\StorageNas";
 
 if (!Directory.Exists(storagePath))
     Directory.CreateDirectory(storagePath);
@@ -27,9 +28,31 @@ app.MapPost("/upload", async (HttpRequest request) =>
 {
     var files = request.Form.Files;
 
+    long totalSize = files.Sum(f => f.Length);
+
+    var drive = new DriveInfo(Path.GetPathRoot(storagePath)!);
+
+    if (drive.AvailableFreeSpace < totalSize)
+    {
+        return Results.BadRequest("Not enough disk space");
+    }
+
     foreach (var file in files)
     {
-        var safeFileName = Path.GetFileName(file.FileName);
+        if (file.Length == 0)
+            continue;
+        
+        var originalName = Path.GetFileNameWithoutExtension(file.FileName);
+        originalName = string.Concat(originalName.Split(Path.GetInvalidFileNameChars()));
+
+        if (string.IsNullOrWhiteSpace(originalName))
+            continue;
+
+        var name = originalName.Length > 20 ? originalName[..20] : originalName;
+        var timeCreate = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var extension = Path.GetExtension(file.FileName);
+        var safeFileName = $"{name}_{timeCreate}{extension}";
+
         var filePath = Path.Combine(storagePath, safeFileName);
 
         using var stream = File.Create(filePath);
@@ -42,6 +65,10 @@ app.MapPost("/upload", async (HttpRequest request) =>
 app.MapGet("/download/{filename}", (string filename) =>
 {
     var safeFileName = Path.GetFileName(filename);
+
+    if (string.IsNullOrWhiteSpace(safeFileName))
+        return Results.BadRequest();
+
     var filePath = Path.Combine(storagePath, safeFileName);
 
     if (!File.Exists(filePath))
@@ -61,6 +88,10 @@ app.MapGet("/files", () =>
 app.MapDelete("/delete/{filename}", (string filename) =>
 {
     var safeFileName = Path.GetFileName(filename);
+
+    if (string.IsNullOrWhiteSpace(safeFileName))
+        return Results.BadRequest();
+
     var filePath = Path.Combine(storagePath, safeFileName);
 
     if (!File.Exists(filePath))
