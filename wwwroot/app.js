@@ -12,6 +12,11 @@ async function loadFiles() {
         link.href = '/download/' + f;
         link.innerText = f;
 
+
+        const playBtn = document.createElement('button');
+        playBtn.innerText = 'play';
+        playBtn.onclick = () => playVideo(f);
+
         const delBtn = document.createElement('button');
         delBtn.innerText = 'x';
         delBtn.onclick = async () => {
@@ -19,6 +24,7 @@ async function loadFiles() {
             loadFiles();
         };
 
+        li.appendChild(playBtn);
         li.appendChild(link);
         li.appendChild(delBtn);
 
@@ -38,5 +44,14 @@ document.getElementById('uploadForm').onsubmit = async (e) => {
 
     loadFiles();
 };
+
+function playVideo(filename) {
+    const player = document.getElementById('player');
+
+    player.src = '/stream/' + filename;
+    player.style.display = 'block';
+
+    player.play();
+}
 
 loadFiles();

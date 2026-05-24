@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.StaticFiles;
 
 // ngrok http 5000
 
@@ -17,7 +18,7 @@ builder.Services.Configure<FormOptions>(options =>
 var app = builder.Build();
 
 var storagePath = @"/home/td63d/storage";
-//var storagePath = @"D:\StorageNas";
+// var storagePath = @"D:\StorageNas";
 
 if (!Directory.Exists(storagePath))
     Directory.CreateDirectory(storagePath);
@@ -100,6 +101,21 @@ app.MapDelete("/delete/{filename}", (string filename) =>
     File.Delete(filePath);
 
     return Results.Ok("Удалено");
+});
+
+app.MapGet("/stream/{filename}", (string filename) =>
+{
+    var safeFileName = Path.GetFileName(filename);
+    var filePath = Path.Combine(storagePath, safeFileName);
+
+    if (!File.Exists(filePath))
+        return Results.NotFound();
+
+    var provider = new FileExtensionContentTypeProvider();
+    if (!provider.TryGetContentType(filePath, out var contentType))
+        contentType = "application/octet-stream";
+
+    return Results.File(filePath, contentType, enableRangeProcessing: true);
 });
 
 app.MapFallbackToFile("index.html");
